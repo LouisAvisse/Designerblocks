@@ -1,0 +1,26 @@
+{
+  "name": "designerblocks",
+  "version": "1.0.0",
+  "description": "A Figma plugin for designers to display their activity and share it on social media.",
+  "scripts": {
+    "dev": "concurrently \"vite build --watch\" \"tsc -p tsconfig.code.json --watch\"",
+    "build": "vite build && tsc -p tsconfig.code.json",
+    "build:ui": "vite build",
+    "build:code": "tsc -p tsconfig.code.json"
+  },
+  "dependencies": {
+    "html-to-image": "^1.11.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.103.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vite-plugin-singlefile": "^2.0.3"
+  }
+}

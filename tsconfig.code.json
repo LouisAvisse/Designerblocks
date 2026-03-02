@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "lib": [
+      "ES6"
+    ],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "outDir": "dist"
+  },
+  "include": [
+    "src/code.ts",
+    "node_modules/@figma/plugin-typings/index.d.ts"
+  ]
+}
