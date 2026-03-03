@@ -12,7 +12,7 @@
   ],
   "networkAccess": {
     "allowedDomains": [
-      "none"
+      "https://www.figma.com"
     ]
   }
 }
