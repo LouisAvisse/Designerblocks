@@ -74,7 +74,7 @@ function recordActivity(amount = 1) {
         sendActivity();
     }, 1000);
 }
-// ---- Quick Synchronous Page Counter (instant live updates) ----
+// ---- Fast Change Detection & Polling Engine ----
 function quickCountCurrentPage() {
     const stats = { nodes: 0, frames: 0, components: 0 };
     const stack = [figma.currentPage];
@@ -91,6 +91,23 @@ function quickCountCurrentPage() {
         }
     }
     return stats;
+}
+// Polls the current page every 1s for instant live updates
+let pollInterval = null;
+function startPolling() {
+    if (pollInterval)
+        return;
+    pollInterval = setInterval(() => {
+        const stats = quickCountCurrentPage();
+        const cached = pageStatsCache.get(figma.currentPage.id);
+        if (!cached || stats.nodes !== cached.nodes || stats.frames !== cached.frames || stats.components !== cached.components) {
+            const delta = cached ? Math.abs(stats.nodes - cached.nodes) : 1;
+            if (delta > 0)
+                recordActivity(delta);
+            pageStatsCache.set(figma.currentPage.id, stats);
+            sendAllStats();
+        }
+    }, 1000);
 }
 // ---- Non-Blocking Crawler Engine ----
 let crawlerIsRunning = false;
@@ -158,8 +175,6 @@ function startCrawler() {
         }
         finally {
             // Always finish with a fresh current-page count so stale crawl data never wins
-            const freshStats = quickCountCurrentPage();
-            pageStatsCache.set(figma.currentPage.id, freshStats);
             crawlerIsRunning = false;
             figma.ui.postMessage({ type: 'project-syncing', isSyncing: false });
             sendAllStats();
@@ -221,30 +236,6 @@ function handleUpdate() {
         startCrawler();
     }, 3000);
 }
-// ---- Live Polling Engine ----
-// Polls the current page every second for instant stat updates.
-// This is more reliable than documentchange which may not fire in all cases.
-let pollInterval = null;
-function startPolling() {
-    if (pollInterval)
-        return;
-    pollInterval = setInterval(() => {
-        const stats = quickCountCurrentPage();
-        const cached = pageStatsCache.get(figma.currentPage.id);
-        // Only send if something actually changed
-        if (!cached ||
-            stats.nodes !== cached.nodes ||
-            stats.frames !== cached.frames ||
-            stats.components !== cached.components) {
-            // Record the activity (delta of nodes). If no cache, it's a new page load, treat as 1 interaction to be safe.
-            const delta = cached ? Math.abs(stats.nodes - cached.nodes) : 1;
-            if (delta > 0)
-                recordActivity(delta);
-            pageStatsCache.set(figma.currentPage.id, stats);
-            sendAllStats();
-        }
-    }, 1000);
-}
 // ---- Initialization ----
 initActivity();
 // Load cached stats, then prune stale page IDs
@@ -266,20 +257,20 @@ figma.ui.onmessage = (msg) => __awaiter(void 0, void 0, void 0, function* () {
         sendAllStats();
         sendActivity();
         updateSelection();
-        // Start live polling for instant stat updates
+        // Re-enable polling
         startPolling();
         // Full crawl in background for cross-page totals
         startCrawler();
-        // documentchange for activity tracking + background crawl trigger
-        figma.on('documentchange', handleUpdate);
+        figma.on('documentchange', () => {
+            handleUpdate();
+        });
         figma.on('currentpagechange', () => {
-            // Quick count new page immediately, then background crawl
-            const s = quickCountCurrentPage();
-            pageStatsCache.set(figma.currentPage.id, s);
             sendAllStats();
             startCrawler();
         });
-        figma.on('selectionchange', updateSelection);
+        figma.on('selectionchange', () => {
+            updateSelection();
+        });
     }
     if (msg.type === 'resize')
         figma.ui.resize(msg.width, msg.height);
