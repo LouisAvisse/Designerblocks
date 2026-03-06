@@ -45,7 +45,7 @@ export function DesignerCard({ user, file, selection }: Props) {
 
       {/* Footer */}
       <div className="card-footer">
-        <div className="card-brand">Designerblocks</div>
+        <div className="card-brand">Statistigma</div>
         <div className="card-page">{file.pageName}</div>
       </div>
     </div>
